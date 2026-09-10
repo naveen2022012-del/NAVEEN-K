@@ -18,6 +18,7 @@ import { LiteracyGuideModal } from './components/LiteracyGuideModal';
 import { AuthModal } from './components/AuthModal';
 import { NewsAnalysisResponse, HistoryItem, SampleNewsItem, MisinformationChallenge, StudentProfile } from './types';
 import { SAMPLE_NEWS_ARTICLES } from './data/sampleNews';
+import { runLocalAnalysis } from './utils/localAnalyzer';
 import { ShieldCheck, AlertCircle, ArrowDown, Sparkles } from 'lucide-react';
 
 const STORAGE_KEY = 'ai_fake_news_history_v1';
@@ -120,23 +121,32 @@ export default function App() {
     setError(null);
 
     try {
-      const response = await fetch('/api/analyze-news', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          headline: targetHeadline.trim(),
-          text: targetText.trim(),
-          sourceUrl: targetSourceUrl.trim(),
-          sourceName: targetSourceName.trim(),
-        }),
-      });
+      let data: NewsAnalysisResponse;
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Server returned error status ${response.status}`);
+      try {
+        const response = await fetch('/api/analyze-news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            headline: targetHeadline.trim(),
+            text: targetText.trim(),
+            sourceUrl: targetSourceUrl.trim(),
+            sourceName: targetSourceName.trim(),
+          }),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Server status ${response.status}`);
+        }
+
+        data = await response.json();
+      } catch (networkOrApiErr) {
+        // Fallback for static environments like GitHub Pages where /api/* backend is not hosted
+        console.warn('Backend server not reachable, executing browser-based forensic evaluation engine:', networkOrApiErr);
+        data = runLocalAnalysis(targetText, targetHeadline, targetSourceName, targetSourceUrl);
       }
 
-      const data: NewsAnalysisResponse = await response.json();
       setAnalysisResult(data);
       saveHistoryItem(data, targetHeadline, targetText);
 
