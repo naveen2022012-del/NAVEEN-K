@@ -1,0 +1,6 @@
+{
+  "name": "AI Fake News Detection System",
+  "description": "An AI-powered system that analyzes news content, headlines, and claims to evaluate authenticity, sensationalism, and credibility.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
